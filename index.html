@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Heladería - Gestión Completa</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    body { background: #f8f4fb; }
+    .card { border-radius: 12px; }
+    .nav-pills .nav-link.active { background-color: #d63384 !important; }
+</style>
+</head>
+
+<body class="p-4">
+
+<h1 class="text-center mb-4 text-danger">🍨 Sistema Completo de Heladería</h1>
+
+<div class="container">
+
+    <!-- Navegación -->
+    <ul class="nav nav-pills mb-4" id="pills-tab">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#pedidos">Pedidos</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#admin">Administración</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="pill" href="#reportes">Reportes</a></li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- ----------------- PANEL DE PEDIDOS ----------------- -->
+        <div class="tab-pane fade show active" id="pedidos">
+            <div class="card p-4">
+                <h3>Crear Pedido</h3>
+
+                <div class="row mt-3">
+
+                    <!-- Sabores -->
+                    <div class="col-md-4">
+                        <label class="fw-bold">Sabor:</label>
+                        <select id="sabor" class="form-select"></select>
+                    </div>
+
+                    <!-- Tamaños -->
+                    <div class="col-md-4">
+                        <label class="fw-bold">Tamaño:</label>
+                        <select id="tamano" class="form-select"></select>
+                    </div>
+
+                    <!-- Toppings -->
+                    <div class="col-md-4">
+                        <label class="fw-bold">Toppings:</label>
+                        <div id="toppingsLista"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-success mt-3" onclick="agregarPedido()">Agregar Pedido</button>
+
+            </div>
+
+            <div class="card p-4 mt-3">
+                <h3>Pedidos Registrados</h3>
+                <div id="listaPedidos"></div>
+            </div>
+        </div>
+
+        <!-- ----------------- PANEL DE ADMINISTRACIÓN ----------------- -->
+        <div class="tab-pane fade" id="admin">
+            <div class="card p-4">
+                <h3>Panel de Administración</h3>
+
+                <h5 class="mt-4">Editar precios de tamaños</h5>
+                <div id="adminTamanos" class="row"></div>
+
+                <h5 class="mt-4">Administrar Sabores</h5>
+                <div class="input-group w-50">
+                    <input id="nuevoSabor" class="form-control" placeholder="Nuevo sabor">
+                    <button class="btn btn-primary" onclick="agregarSabor()">Agregar</button>
+                </div>
+                <ul id="listaSabores" class="mt-2"></ul>
+
+                <h5 class="mt-4">Administrar Toppings</h5>
+                <div class="input-group w-50">
+                    <input id="nuevoTopping" class="form-control" placeholder="Nuevo topping">
+                    <button class="btn btn-primary" onclick="agregarTopping()">Agregar</button>
+                </div>
+                <ul id="listaToppings" class="mt-2"></ul>
+            </div>
+        </div>
+
+        <!-- ----------------- PANEL DE REPORTES ----------------- -->
+        <div class="tab-pane fade" id="reportes">
+            <div class="card p-4">
+                <h3>Reportes del Día</h3>
+                
+                <p class="mt-3"><strong>Total recaudado:</strong> $<span id="repTotal"></span></p>
+                <h5>Sabores más vendidos:</h5>
+                <ul id="repSabores"></ul>
+
+                <h5 class="mt-3">Ingresos por toppings:</h5>
+                <ul id="repToppings"></ul>
+
+                <button class="btn btn-warning mt-3" onclick="generarReportes()">Actualizar Reportes</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// --------------------- DATA ---------------------
+let preciosTamanos = {
+    "Pequeño": 3000,
+    "Mediano": 5000,
+    "Grande": 7000
+};
+
+let sabores = ["Vainilla", "Chocolate", "Fresa", "Mango"];
+
+let toppings = {
+    "Chispas": 1000,
+    "Oreo": 1000,
+    "Caramelo": 1000,
+    "Frutas": 1000
+};
+
+let pedidos = [];
+
+// --------------------- CARGA INICIAL ---------------------
+window.onload = () => {
+    cargarSabores();
+    cargarTamanos();
+    cargarToppings();
+    renderAdmin();
+};
+
+// --------------------- PEDIDOS ---------------------
+function agregarPedido() {
+    let sabor = document.getElementById("sabor").value;
+    let tamano = document.getElementById("tamano").value;
+
+    let topsSeleccionados = [];
+    document.querySelectorAll(".top-check:checked").forEach(t => {
+        topsSeleccionados.push(t.value);
+    });
+
+    let total = preciosTamanos[tamano];
+    topsSeleccionados.forEach(t => total += toppings[t]);
+
+    pedidos.push({ sabor, tamano, toppings: topsSeleccionados, total });
+
+    mostrarPedidos();
+}
+
+function mostrarPedidos() {
+    let cont = document.getElementById("listaPedidos");
+    cont.innerHTML = "";
+
+    pedidos.forEach((p, i) => {
+        cont.innerHTML += `
+            <div class="alert alert-light border">
+                <strong>Pedido ${i+1}</strong><br>
+                Sabor: ${p.sabor}<br>
+                Tamaño: ${p.tamano} ($${preciosTamanos[p.tamano]})<br>
+                Toppings: ${p.toppings.join(", ") || "Ninguno"}<br>
+                <strong>Total: $${p.total}</strong>
+            </div>
+        `;
+    });
+}
+
+// --------------------- ADMIN ---------------------
+function cargarSabores() {
+    let sel = document.getElementById("sabor");
+    sel.innerHTML = sabores.map(s => `<option>${s}</option>`).join("");
+}
+function cargarTamanos() {
+    let sel = document.getElementById("tamano");
+    sel.innerHTML = Object.keys(preciosTamanos)
+        .map(t => `<option>${t}</option>`).join("");
+}
+
+function cargarToppings() {
+    let div = document.getElementById("toppingsLista");
+    div.innerHTML = Object.keys(toppings).map(t => `
+        <div class="form-check">
+            <input class="form-check-input top-check" type="checkbox" value="${t}">
+            <label class="form-check-label">${t} - $${toppings[t]}</label>
+        </div>
+    `).join("");
+}
+
+function renderAdmin() {
+    // Precios tamaños
+    let cont = document.getElementById("adminTamanos");
+    cont.innerHTML = Object.keys(preciosTamanos).map(t => `
+        <div class="col-4">
+            <label>${t}</label>
+            <input type="number" class="form-control" value="${preciosTamanos[t]}"
+                onchange="preciosTamanos['${t}']=parseInt(this.value)">
+        </div>
+    `).join("");
+
+    // Sabores
+    let ul1 = document.getElementById("listaSabores");
+    ul1.innerHTML = sabores.map((s, i) =>
+        `<li>${s} <button class="btn btn-sm btn-danger" onclick="eliminarSabor(${i})">X</button></li>`
+    ).join("");
+
+    // Toppings
+    let ul2 = document.getElementById("listaToppings");
+    ul2.innerHTML = Object.keys(toppings).map(t =>
+        `<li>${t} - $${toppings[t]} 
+            <button class="btn btn-sm btn-danger" onclick="eliminarTopping('${t}')">X</button>
+        </li>`
+    ).join("");
+}
+
+function agregarSabor() {
+    let s = document.getElementById("nuevoSabor").value;
+    if (s) sabores.push(s);
+    cargarSabores(); renderAdmin();
+}
+function eliminarSabor(i) {
+    sabores.splice(i, 1);
+    cargarSabores(); renderAdmin();
+}
+
+function agregarTopping() {
+    let t = document.getElementById("nuevoTopping").value;
+    if (t) toppings[t] = 1000;
+    cargarToppings(); renderAdmin();
+}
+function eliminarTopping(t) {
+    delete toppings[t];
+    cargarToppings(); renderAdmin();
+}
+
+// --------------------- REPORTES ---------------------
+function generarReportes() {
+    let total = 0;
+    let conteoSabores = {};
+    let ingresosToppings = {};
+
+    pedidos.forEach(p => {
+        total += p.total;
+
+        conteoSabores[p.sabor] = (conteoSabores[p.sabor] || 0) + 1;
+
+        p.toppings.forEach(t => {
+            ingresosToppings[t] = (ingresosToppings[t] || 0) + toppings[t];
+        });
+    });
+
+    document.getElementById("repTotal").innerText = total;
+
+    // Sabores
+    let ulS = document.getElementById("repSabores");
+    ulS.innerHTML = Object.keys(conteoSabores)
+        .map(s => `<li>${s}: ${conteoSabores[s]} vendidos</li>`).join("");
+
+    // Toppings
+    let ulT = document.getElementById("repToppings");
+    ulT.innerHTML = Object.keys(ingresosToppings)
+        .map(t => `<li>${t}: $${ingresosToppings[t]}</li>`).join("");
+}
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
